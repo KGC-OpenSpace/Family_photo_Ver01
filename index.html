@@ -1,60 +1,492 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>Family Photo Player</title>
+    <meta charset="UTF-8">
+    <title>KGC Café - Premium World Time & Weather</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Plus+Jakarta+Sans:wght@400;600;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-wood: #3e2723;
+            --brass-gold: #d4af37;
+            --card-day-bg: rgba(255, 255, 255, 0.90);
+            --card-night-bg: rgba(18, 18, 18, 0.90);
+            --hub-blue: #1976d2;
+        }
 
-<style>
-html, body {
-    margin:0;
-    padding:0;
-    width:100%;
-    height:100%;
-    background:black;
-    overflow:hidden;
-}
+        body {
+            font-family: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;
+            margin: 0; padding: 0;
+            display: flex; flex-direction: column; align-items: center;
+            height: 100vh; width: 100vw;
+            overflow: hidden;
+            background-color: var(--bg-wood);
+            background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
+            background-repeat: repeat;
+            box-sizing: border-box;
+        }
 
-video{
-    width:100%;
-    height:100%;
-    object-fit:contain;
-    background:black;
-}
-</style>
+        /* 時計画面のコンテナ */
+        #clock-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* 動画再生画面のコンテナ（初期は非表示） */
+        #video-view {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #video-view video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* プレミアム・ロゴ */
+        h1.logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 5vh;
+            color: var(--brass-gold);
+            margin: 10px 0 6px;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+            border-bottom: 2px solid var(--brass-gold);
+            padding-bottom: 3px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* コーヒー＆湯気 */
+        .coffee-container {
+            position: relative;
+            display: inline-block;
+            font-size: 4vh;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+        }
+
+        .steam {
+            position: absolute;
+            top: -2vh;
+            left: 50%;
+            width: 0.7vh;
+            height: 1.8vh;
+            background: linear-gradient(to top, rgba(255,255,255,0.8), rgba(255,255,255,0));
+            border-radius: 50%;
+            opacity: 0;
+            transform: translateX(-50%);
+            animation: riseSteam 2.5s infinite ease-in-out;
+        }
+
+        .steam:nth-child(2) { left: 30%; animation-delay: 0.8s; }
+        .steam:nth-child(3) { left: 70%; animation-delay: 1.6s; }
+
+        @keyframes riseSteam {
+            0% { transform: translateY(0) scaleX(0.8); opacity: 0; }
+            30% { opacity: 0.7; }
+            100% { transform: translateY(-2.2vh) scaleX(1.5) scaleY(1.3); opacity: 0; }
+        }
+
+        #main-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: calc(100vh - 90px);
+            gap: 12px;
+        }
+
+        .clock-row {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            gap: 16px;
+        }
+
+        /* カードデザイン */
+        .card { 
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5vh 1vw;
+            border-radius: 18px;
+            text-align: center;
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+            width: 23.5vw;
+            height: 40vh;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 50px rgba(0,0,0,0.7);
+        }
+
+        .card.day { 
+            background: var(--card-day-bg); 
+            border: 2px solid rgba(212, 175, 55, 0.7); 
+            color: #1a1a1a; 
+        }
+        
+        .card.night { 
+            background: var(--card-night-bg); 
+            border: 2px solid rgba(212, 175, 55, 0.4); 
+            color: #f3f3f3; 
+        }
+
+        .name-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .name-main-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .name-main { 
+            font-size: 2.6vh; 
+            font-weight: 700; 
+            letter-spacing: 2px;
+            text-transform: uppercase; 
+            margin: 0; 
+            line-height: 1.1;
+        }
+        
+        .hub-label { 
+            font-size: 1.4vh; 
+            color: #fff; 
+            background-color: var(--hub-blue); 
+            font-weight: 600; 
+            padding: 1px 6px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            white-space: nowrap;
+        }
+
+        .country-flag-img {
+            height: 3.8vh;
+            width: auto;
+            border-radius: 4px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.35);
+            vertical-align: middle;
+            filter: url(#flag-wave-filter);
+        }
+        
+        .name-country { 
+            font-size: 1.3vh; 
+            letter-spacing: 1.5px;
+            opacity: 0.65; 
+            font-weight: 700; 
+            margin-top: 2px;
+        }
+
+        .weather-info { 
+            font-size: 2vh; 
+            font-weight: 700; 
+            margin: 2px 0; 
+        }
+
+        /* アナログ時計 */
+        .clock-frame { 
+            border-radius: 50%; 
+            height: 17vh;
+            aspect-ratio: 1 / 1; 
+            position: relative; 
+            border: 3.5px solid var(--brass-gold);
+            box-shadow: inset 0 0 14px rgba(0,0,0,0.6), 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        .dial { width: 100%; height: 100%; border-radius: 50%; position: relative; overflow: hidden; }
+        .card.day .dial { background: #ffffff; }
+        .card.night .dial { background: #0a0a0a; }
+
+        .number { 
+            position: absolute; 
+            width: 100%; 
+            height: 100%; 
+            text-align: center; 
+            font-size: 1.5vh; 
+            font-weight: 700; 
+            padding: 6%; 
+            box-sizing: border-box; 
+        }
+        .card.day .number { color: #444; }
+        .card.night .number { color: var(--brass-gold); opacity: 0.9; }
+
+        .hand { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom; border-radius: 4px; }
+        .hour { width: 4.5px; height: 5.5vh; background: #222; z-index: 4; margin-left: -2.25px; }
+        .min { width: 3.5px; height: 7.5vh; background: #555; z-index: 3; margin-left: -1.75px; }
+        .sec { width: 1.5px; height: 8vh; background: #e53935; z-index: 5; margin-left: -0.75px; }
+        
+        .card.night .hour { background: #eee; }
+        .card.night .min { background: #bbb; }
+
+        .digital-time { 
+            font-size: 4.2vh; 
+            font-weight: 700; 
+            font-family: 'Plus Jakarta Sans', monospace; 
+            letter-spacing: 1.5px;
+            margin-top: 2px; 
+            line-height: 1;
+        }
+    </style>
 </head>
-
 <body>
 
-<video id="player" autoplay muted playsinline></video>
+    <!-- SVGフィルター -->
+    <svg style="display:none;">
+        <filter id="flag-wave-filter" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence id="turbulence" type="fractalNoise" baseFrequency="0.04 0.16" numOctaves="1" result="noise" />
+            <feDisplacementMap id="displacement" in="SourceGraphic" in2="noise" scale="6" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+    </svg>
 
-<script>
+    <!-- 時計表示エリア (3分) -->
+    <div id="clock-view">
+        <h1 class="logo">
+            KGC Café 
+            <span class="coffee-container">
+                ☕
+                <span class="steam"></span>
+                <span class="steam"></span>
+                <span class="steam"></span>
+            </span>
+        </h1>
+        
+        <div id="main-container">
+            <div class="clock-row" id="row-top"></div>
+            <div class="clock-row" id="row-bottom"></div>
+        </div>
+    </div>
 
-const playlist = [
-    "Ver1_2_CCR.mp4",
-    "Family_photo_20261008.mp4"
-];
+    <!-- 動画再生エリア (1分52秒) -->
+    <div id="video-view">
+        <video id="loop-video" playsinline muted preload="auto"></video>
+    </div>
 
-let current = 0;
+    <script>
+        const rowTop = document.getElementById('row-top');
+        const rowBottom = document.getElementById('row-bottom');
+        const clockView = document.getElementById('clock-view');
+        const videoView = document.getElementById('video-view');
+        const loopVideo = document.getElementById('loop-video');
 
-const player = document.getElementById("player");
+        // 再生順。配列の順番で動画を切り替えます。
+        const videoPlaylist = [
+            'Ver1_2_CCR.mp4',
+            'Family_photo_20261008.mp4'
+        ];
 
-function playVideo(index){
-    player.src = playlist[index];
-    player.load();
-    player.play();
-}
+        let currentVideoIndex = 0;
+        let clockTimer = null;
 
-player.addEventListener("ended", () => {
-    current++;
-    if(current >= playlist.length){
-        current = 0;
-    }
-    playVideo(current);
-});
+        // 時間設定（ミリ秒）
+        const CLOCK_DURATION = 3 * 60 * 1000; // 時計表示：3分（180000ms）
 
-playVideo(0);
+        const zones = [
+            { id: "Asia/Tokyo", name: "TOKYO", country: "JAPAN", lat: 35.6895, lng: 139.6917, hub: "KGC-J", code: "jp" },
+            { id: "Asia/Shanghai", name: "BEIJING", country: "CHINA", lat: 39.9042, lng: 116.4074, code: "cn" },
+            { id: "Asia/Jakarta", name: "JAKARTA", country: "INDONESIA", lat: -6.2088, lng: 106.8456, code: "id" },
+            { id: "Asia/Kolkata", name: "DELHI", country: "INDIA", lat: 28.6139, lng: 77.2090, code: "in" },
+            { id: "Europe/Amsterdam", name: "AMSTERDAM", country: "NETHERLANDS", lat: 52.3676, lng: 4.9041, hub: "KGC-E", code: "nl" },
+            { id: "Europe/Berlin", name: "BERLIN", country: "GERMANY", lat: 52.5200, lng: 13.4050, code: "de" },
+            { id: "America/New_York", name: "NEW YORK", country: "USA", lat: 40.7128, lng: -74.0060, hub: "KGC-A", code: "us" },
+            { id: "America/Mexico_City", name: "MEXICO CITY", country: "MEXICO", lat: 19.4326, lng: -99.1332, code: "mx" }
+        ];
 
-</script>
+        function render() {
+            let gridHTMLTop = "";
+            let gridHTMLBottom = "";
 
+            zones.forEach((z, index) => {
+                const safeId = z.id.replace(/\//g, '-');
+                const hubTag = z.hub ? `<span class="hub-label">${z.hub}</span>` : '';
+                const flagUrl = `https://flagcdn.com/h80/${z.code}.png`;
+                const countryFlagImg = `<img src="${flagUrl}" alt="${z.country} Flag" class="country-flag-img">`;
+                
+                const cardHTML = `
+                <div class="card" id="card-${safeId}">
+                    <div class="name-container">
+                        <div class="name-main-row">
+                            ${countryFlagImg}
+                            <span class="name-main">${z.name}</span>
+                            ${hubTag}
+                        </div>
+                        <div class="name-country">${z.country}</div>
+                    </div>
+                    <div class="weather-info" id="weather-${safeId}">Loading...</div>
+                    <div class="clock-frame">
+                        <div class="dial">
+                            ${[...Array(12)].map((_,i)=>`<div class="number" style="transform:rotate(${(i+1)*30}deg)"><span style="display:inline-block;transform:rotate(-${(i+1)*30}deg)">${i+1}</span></div>`).join('')}
+                            <div class="hand hour" id="h-${safeId}"></div>
+                            <div class="hand min" id="m-${safeId}"></div>
+                            <div class="hand sec" id="s-${safeId}"></div>
+                        </div>
+                    </div>
+                    <div class="digital-time" id="d-${safeId}">00:00</div>
+                </div>`;
+                
+                if (index < 4) {
+                    gridHTMLTop += cardHTML;
+                } else {
+                    gridHTMLBottom += cardHTML;
+                }
+            });
+            rowTop.innerHTML = gridHTMLTop;
+            rowBottom.innerHTML = gridHTMLBottom;
+        }
+
+        async function fetchWeather() {
+            zones.forEach(async (z) => {
+                const safeId = z.id.replace(/\//g, '-');
+                const weatherElem = document.getElementById(`weather-${safeId}`);
+                try {
+                    const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${z.lat}&longitude=${z.lng}&current_weather=true`);
+                    const data = await response.json();
+                    
+                    const temp = Math.round(data.current_weather.temperature);
+                    const isDaylight = data.current_weather.is_day === 1;
+                    const icon = isDaylight ? "☀️" : "🌙";
+
+                    if (weatherElem) {
+                        weatherElem.innerHTML = `${icon} ${temp}°C`;
+                    }
+                } catch (error) {
+                    if (weatherElem) weatherElem.innerHTML = `--°C`;
+                }
+            });
+        }
+
+        function tick() {
+            const now = new Date();
+            zones.forEach(z => {
+                const id = z.id.replace(/\//g, '-');
+                const fmt = new Intl.DateTimeFormat('en-US', {
+                    timeZone: z.id, hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false
+                });
+                const p = Object.fromEntries(fmt.formatToParts(now).map(x => [x.type, x.value]));
+                const hElement = document.getElementById(`h-${id}`);
+                const mElement = document.getElementById(`m-${id}`);
+                const sElement = document.getElementById(`s-${id}`);
+                const dElement = document.getElementById(`d-${id}`);
+                
+                if (!hElement || !mElement || !sElement || !dElement) return;
+
+                const h = parseInt(p.hour), m = parseInt(p.minute), s = parseInt(p.second);
+
+                sElement.style.transform = `rotate(${s * 6}deg)`;
+                mElement.style.transform = `rotate(${(m * 6) + (s * 0.1)}deg)`;
+                hElement.style.transform = `rotate(${((h % 12) * 30) + (m * 0.5)}deg)`;
+                dElement.innerText = `${p.hour.padStart(2,'0')}:${p.minute.padStart(2,'0')}`;
+
+                const card = document.getElementById(`card-${id}`);
+                const isDay = h >= 6 && h < 18;
+                card.className = isDay ? 'card day' : 'card night';
+            });
+            setTimeout(tick, 1000);
+        }
+
+        let waveStep = 0;
+        function animateFlagWave() {
+            waveStep += 0.15;
+            const freqX = 0.035 + Math.sin(waveStep) * 0.01;
+            const freqY = 0.12 + Math.cos(waveStep * 0.7) * 0.03;
+            const turbulence = document.getElementById('turbulence');
+            if (turbulence) {
+                turbulence.setAttribute('baseFrequency', `${freqX.toFixed(3)} ${freqY.toFixed(3)}`);
+            }
+            requestAnimationFrame(animateFlagWave);
+        }
+
+        // --- 世界時計と動画を交互表示するメインロジック ---
+        function startLoopCycle() {
+            // 世界時計を表示し、動画を停止・非表示にする
+            clearTimeout(clockTimer);
+            loopVideo.pause();
+            loopVideo.removeAttribute('src');
+            loopVideo.load();
+
+            videoView.style.display = 'none';
+            clockView.style.display = 'flex';
+
+            // 3分後に、現在の再生順の動画へ切り替える
+            clockTimer = setTimeout(switchToVideo, CLOCK_DURATION);
+        }
+
+        function switchToVideo() {
+            clearTimeout(clockTimer);
+
+            // 世界時計を隠し、指定された動画を先頭から再生する
+            clockView.style.display = 'none';
+            videoView.style.display = 'flex';
+
+            loopVideo.src = videoPlaylist[currentVideoIndex];
+            loopVideo.muted = true;
+            loopVideo.currentTime = 0;
+            loopVideo.load();
+
+            const playPromise = loopVideo.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.log('Autoplay prevented:', error);
+
+                    // Silkなどで自動再生が拒否された場合は、画面の選択で再試行する
+                    const retryPlay = () => {
+                        loopVideo.play()
+                            .then(() => document.removeEventListener('click', retryPlay))
+                            .catch(retryError => console.log('Playback retry failed:', retryError));
+                    };
+                    document.addEventListener('click', retryPlay);
+                });
+            }
+        }
+
+        // 動画が最後まで再生されたら、次回用の動画番号に進めて世界時計へ戻る
+        loopVideo.addEventListener('ended', () => {
+            currentVideoIndex = (currentVideoIndex + 1) % videoPlaylist.length;
+            startLoopCycle();
+        });
+
+        // 読み込みエラー時も停止せず、次の動画へ進んで世界時計へ戻る
+        loopVideo.addEventListener('error', () => {
+            console.log('Video load error:', videoPlaylist[currentVideoIndex]);
+            currentVideoIndex = (currentVideoIndex + 1) % videoPlaylist.length;
+            startLoopCycle();
+        });
+
+        // 初期化実行
+        render();
+        tick();
+        fetchWeather();
+        setInterval(fetchWeather, 600000);
+        animateFlagWave();
+
+        // ループサイクル開始
+        startLoopCycle();
+    </script>
 </body>
 </html>
